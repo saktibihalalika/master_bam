@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.3.0-dev+20221014.c92621d023
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 23, 2024 at 07:57 PM
--- Server version: 10.4.24-MariaDB
--- PHP Version: 8.1.4
+-- Generation Time: Oct 25, 2024 at 12:00 PM
+-- Server version: 10.4.28-MariaDB
+-- PHP Version: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -31,7 +31,7 @@ CREATE TABLE `tbl_admin` (
   `id_admin` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_admin`
@@ -49,14 +49,15 @@ INSERT INTO `tbl_admin` (`id_admin`, `username`, `password`) VALUES
 CREATE TABLE `tbl_alternatif` (
   `id_alternatif` int(11) NOT NULL,
   `nama_alternatif` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_alternatif`
 --
 
 INSERT INTO `tbl_alternatif` (`id_alternatif`, `nama_alternatif`) VALUES
-(3, 'BAM');
+(3, 'BAM'),
+(4, 'GAT');
 
 -- --------------------------------------------------------
 
@@ -68,7 +69,16 @@ CREATE TABLE `tbl_kriteria` (
   `id_kriteria` int(11) NOT NULL,
   `nama_kriteria` varchar(50) NOT NULL,
   `bobot_kriteria` double NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_kriteria`
+--
+
+INSERT INTO `tbl_kriteria` (`id_kriteria`, `nama_kriteria`, `bobot_kriteria`) VALUES
+(6, 'Harga', 0.4),
+(7, 'Kualitas', 0.4),
+(8, 'Pelayanan', 0.2);
 
 -- --------------------------------------------------------
 
@@ -80,8 +90,8 @@ CREATE TABLE `tbl_penilaian` (
   `id_penilaian` int(11) NOT NULL,
   `nilai_utility` double NOT NULL,
   `id_alternatif` int(11) NOT NULL,
-  `id_sub_kriteria` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `id_kriteria` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -95,7 +105,7 @@ CREATE TABLE `tbl_perangkingan` (
   `peringkat` varchar(25) NOT NULL,
   `id_alternatif` int(11) NOT NULL,
   `id_penilaian` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -108,7 +118,19 @@ CREATE TABLE `tbl_sub_kriteria` (
   `nama_sub_kriteria` varchar(50) NOT NULL,
   `nilai_sub_kriteria` double NOT NULL,
   `id_kriteria` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_sub_kriteria`
+--
+
+INSERT INTO `tbl_sub_kriteria` (`id_sub_kriteria`, `nama_sub_kriteria`, `nilai_sub_kriteria`, `id_kriteria`) VALUES
+(10, 'Mahal', 10, 6),
+(11, 'Murah', 100, 6),
+(12, 'Bagus', 100, 7),
+(13, 'buruk', 10, 7),
+(14, 'baik', 100, 8),
+(15, 'buruk', 10, 8);
 
 --
 -- Indexes for dumped tables
@@ -138,7 +160,7 @@ ALTER TABLE `tbl_kriteria`
 ALTER TABLE `tbl_penilaian`
   ADD PRIMARY KEY (`id_penilaian`),
   ADD KEY `FK_alternatif` (`id_alternatif`),
-  ADD KEY `FK_sub_kriteria` (`id_sub_kriteria`);
+  ADD KEY `FK_kriteria` (`id_kriteria`);
 
 --
 -- Indexes for table `tbl_perangkingan`
@@ -169,19 +191,19 @@ ALTER TABLE `tbl_admin`
 -- AUTO_INCREMENT for table `tbl_alternatif`
 --
 ALTER TABLE `tbl_alternatif`
-  MODIFY `id_alternatif` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_alternatif` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `tbl_kriteria`
 --
 ALTER TABLE `tbl_kriteria`
-  MODIFY `id_kriteria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_kriteria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `tbl_penilaian`
 --
 ALTER TABLE `tbl_penilaian`
-  MODIFY `id_penilaian` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_penilaian` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tbl_perangkingan`
@@ -193,7 +215,7 @@ ALTER TABLE `tbl_perangkingan`
 -- AUTO_INCREMENT for table `tbl_sub_kriteria`
 --
 ALTER TABLE `tbl_sub_kriteria`
-  MODIFY `id_sub_kriteria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_sub_kriteria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables
@@ -204,7 +226,7 @@ ALTER TABLE `tbl_sub_kriteria`
 --
 ALTER TABLE `tbl_penilaian`
   ADD CONSTRAINT `FK_alternatif` FOREIGN KEY (`id_alternatif`) REFERENCES `tbl_alternatif` (`id_alternatif`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_sub_kriteria` FOREIGN KEY (`id_sub_kriteria`) REFERENCES `tbl_sub_kriteria` (`id_sub_kriteria`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `FK_kriteria` FOREIGN KEY (`id_kriteria`) REFERENCES `tbl_kriteria` (`id_kriteria`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tbl_perangkingan`
