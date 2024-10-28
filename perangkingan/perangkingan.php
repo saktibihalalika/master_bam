@@ -25,34 +25,51 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 							if (isset($_POST['simpan'])) {
 								// Mendapatkan nilai alternatif dari POST
 								$alt = $_POST['alt']; // Pastikan ini berisi nilai yang valid
-								// Menyiapkan pernyataan untuk mengambil kriteria
-								$stmtx4 = $connection->prepare("SELECT * FROM tbl_kriteria");
-								$stmtx4->execute();
 
-								// Mengambil hasil kriteria
-								while ($rowx4 = $stmtx4->fetch()) {
-									// Mengambil ID kriteria
-									$idkri = $rowx4['id_kriteria'];
+								// Menyiapkan pernyataan untuk mengambil data dari tbl_kriteria
+								$stmt_kriteria = $connection->prepare("SELECT * FROM tbl_kriteria");
+								$stmt_kriteria->execute();
 
-									// Memeriksa apakah ada input kriteria dan alternatif yang valid
-									if (isset($_POST['kri'][$idkri]) && isset($_POST['altkri'][$idkri])) {
-										$kri = $_POST['kri'][$idkri]; // ID alternatif
-										$altkri = $_POST['altkri'][$idkri]; // Nilai sub-kriteria
+								// Ambil hasil kriteria
+								$result_kriteria = $stmt_kriteria->get_result();
 
-										// Menyiapkan pernyataan untuk menyimpan penilaian
-										$stmt2 = $connection->prepare("INSERT INTO tbl_penilaian (id_penilaian, nilai_utility, id_alternatif, id_kriteria) VALUES (?, ?, ?, ?)");
-										// Pastikan tipe data sesuai; menggunakan bind_param dan menambahkan id_penilaian sebagai parameter.
-										// Anda perlu memberikan nilai untuk id_penilaian; misalnya, dengan menggunakan auto-increment di database
-										$id_penilaian = null; // Atau sesuaikan dengan logika yang diinginkan
+								while ($row_kriteria = $result_kriteria->fetch_assoc()) {
+									$idkri = $row_kriteria['id_kriteria'];
 
-										// Menggunakan bind_param; perhatikan tipe datanya
-										$stmt2->bind_param("dsii", $id_penilaian, $alt, $kri, $idkri);
+									// Menyiapkan pernyataan untuk mengambil data dari tbl_alternatif
+									$stmt_alternatif = $connection->prepare("SELECT * FROM tbl_alternatif");
+									$stmt_alternatif->execute();
+									$result_alternatif = $stmt_alternatif->get_result();
 
-										// Menjalankan pernyataan
-										$stmt2->execute();
+									while ($row_alternatif = $result_alternatif->fetch_assoc()) {
+										$idalt = $row_alternatif['id_alternatif'];
+
+										// Memeriksa apakah ada input kriteria dan alternatif yang valid
+										if (isset($_POST['kri'][$idkri]) && isset($_POST['altkri'][$idkri])) {
+											$kri = $_POST['kri'][$idkri]; // ID alternatif
+											$altkri = $_POST['altkri'][$idkri]; // Nilai sub-kriteria
+
+											// Menyiapkan pernyataan untuk menyimpan penilaian
+											$stmt2 = $connection->prepare("INSERT INTO tbl_penilaian (id_penilaian, nilai_utility, id_alternatif, id_kriteria) VALUES (?, ?, ?, ?)");
+											$id_penilaian = null; // Atau sesuaikan dengan logika yang diinginkan
+
+											// Menggunakan bind_param; perhatikan tipe datanya
+											$stmt2->bind_param("dsii", $id_penilaian, $altkri, $idalt, $idkri);
+
+											// Menjalankan pernyataan
+											$stmt2->execute();
+										}
 									}
+
+									// Tutup statement alternatif sebelum melanjutkan ke kriteria berikutnya
+									$stmt_alternatif->close();
 								}
+
+								// Tutup statement kriteria
+								$stmt_kriteria->close();
 							}
+
+
 							if (isset($_POST['update'])) {
 								// Mendapatkan nilai alternatif dari POST
 								$alt = $_POST['alt']; // ID alternatif yang ingin diupdate
@@ -156,7 +173,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 									$nama_kriteria = htmlspecialchars($row4['nama_kriteria'], ENT_QUOTES);
 
 									// Fetch sub-criteria for the current criterion
-									$stmt5 = $connection->prepare("SELECT * FROM tbl_kriteria WHERE id_kriteria = ?");
+									$stmt5 = $connection->prepare("SELECT * FROM tbl_sub_kriteria WHERE id_kriteria = ?");
 									$stmt5->bind_param("i", $row4['id_kriteria']);
 									$stmt5->execute();
 									$result5 = $stmt5->get_result();
@@ -164,7 +181,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 									// Build options for sub-criteria
 									$subOptions = '';
 									while ($row5 = $result5->fetch_assoc()) {
-										$subOptions .= '<option value="' . htmlspecialchars($row5['id_kriteria'], ENT_QUOTES) . '">' . htmlspecialchars($row5['nama_kriteria'], ENT_QUOTES) . '</option>';
+										$subOptions .= '<option value="' . htmlspecialchars($row5['id_sub_kriteria'], ENT_QUOTES) . '">' . htmlspecialchars($row5['nama_sub_kriteria'], ENT_QUOTES) . '</option>';
 									}
 								?>
 									<tr>
@@ -183,6 +200,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 								<?php
 								}
 								?>
+
 							</table>
 							<tr>
 								<td>
@@ -265,7 +283,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 							// Create a mapping of evaluations for easier access
 							$penilaianMap = [];
 							foreach ($penilaians as $penilaian) {
-								$penilaianMap[$penilaian['id_alternatif']][$penilaian['id_kriteria']] = $penilaian['nilai_penilaian'];
+								$penilaianMap[$penilaian['id_alternatif']][$penilaian['id_kriteria']] = $penilaian['nilai_utility'];
 							}
 
 							$nox = 1;
