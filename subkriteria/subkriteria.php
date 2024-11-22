@@ -161,14 +161,15 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
       </div>
       <div class="table-responsive">
         <table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
-          <thead>
+          <thead style="text-align:center">
             <tr>
               <th width="50">No</th>
               <th>Kriteria</th>
               <th>Sub Kriteria</th>
+              <th>Aksi</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody style="text-align:center">
             <?php
               $stmt = $connection->prepare("SELECT * FROM tbl_kriteria");
               $stmt->execute();
@@ -180,7 +181,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
             ?>
                 <tr>
                   <td><?php echo $no++; ?></td>
-                  <td><?php echo $row['nama_kriteria']; ?></td>
+                  <td style="text-align:left"><?php echo $row['nama_kriteria']; ?></td>
                   <td>
                     <?php
                     // Ambil sub-kriteria berdasarkan id_kriteria
@@ -192,13 +193,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
                     if ($result2->num_rows > 0) { // Cek apakah ada sub-kriteria
                       while ($row2 = $result2->fetch_assoc()) { // Mengambil data sub-kriteria
                     ?>
-                        <?php echo $row2['nilai_sub_kriteria']; ?> - &nbsp;<?php echo $row2['nama_sub_kriteria']; ?>&nbsp;
-                        <a href="?page=form&id=<?php echo $row2['id_sub_kriteria']; ?>&nama=<?php echo urlencode($row2['nama_sub_kriteria']); ?>&nilai=<?php echo $row2['nilai_sub_kriteria']; ?>&kriteria=<?php echo $row2['id_kriteria']; ?>" style="color:orange;">
-                          <span class="mif-pencil icon"></span>
-                        </a>
-                        <a href="?page=hapus&id=<?php echo $row2['id_sub_kriteria']; ?>" style="color:red;">
-                          <span class="mif-cancel icon"></span>
-                        </a><br />
+                        <div style="padding-bottom: 22px;">
+                          <?php echo $row2['nilai_sub_kriteria']; ?> - <?php echo $row2['nama_sub_kriteria']; ?>
+                        </div>
                     <?php
                       }
                     } else {
@@ -208,7 +205,33 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
                     $stmt2->close();
                     ?>
                   </td>
+                  <td>
+                    <?php
+                    // Ambil kembali sub-kriteria berdasarkan id_kriteria untuk tombol
+                    $stmt2 = $connection->prepare("SELECT * FROM tbl_sub_kriteria WHERE id_kriteria = ?");
+                    $stmt2->bind_param("i", $row['id_kriteria']); // Bind parameter untuk keamanan
+                    $stmt2->execute();
+                    $result2 = $stmt2->get_result(); // Mendapatkan hasil dari sub-query
+
+                    if ($result2->num_rows > 0) {
+                      while ($row2 = $result2->fetch_assoc()) {
+                    ?>
+                        <div style="padding-bottom: 9px;">
+                          <a href="?page=form&id=<?php echo $row2['id_sub_kriteria']; ?>&nama=<?php echo urlencode($row2['nama_sub_kriteria']); ?>&nilai=<?php echo $row2['nilai_sub_kriteria']; ?>&kriteria=<?php echo $row2['id_kriteria']; ?>" class="btn btn-warning" style="padding: 3px;">
+                            <span> Ubah </span>
+                          </a>
+                          <a href="?page=hapus&id=<?php echo $row2['id_sub_kriteria']; ?>" class="btn btn-danger" style="padding: 3px;">
+                            <span> Hapus </span>
+                          </a>
+                        </div>
+                    <?php
+                      }
+                    }
+                    $stmt2->close();
+                    ?>
+                  </td>
                 </tr>
+
             <?php
                 }
               } else {

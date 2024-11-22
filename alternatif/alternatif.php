@@ -92,13 +92,45 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 				</div>
 				<?php
 							if (isset($_GET['id'])) {
-								$stmt = $connection->prepare("delete from tbl_alternatif where id_alternatif='" . $_GET['id'] . "'");
-								if ($stmt->execute()) {
+								$id_alternatif = $_GET['id'];
+
+								try {
+									// Mulai transaksi
+									$connection->autocommit(false);
+
+									// Hapus data dari tbl_perangkingan
+									$stmt = $connection->prepare("DELETE FROM tbl_perangkingan WHERE id_alternatif = ?");
+									$stmt->bind_param('i', $id_alternatif);
+									$stmt->execute();
+									$stmt->close();
+
+									// Hapus data dari tbl_penilaian
+									$stmt = $connection->prepare("DELETE FROM tbl_penilaian WHERE id_alternatif = ?");
+									$stmt->bind_param('i', $id_alternatif);
+									$stmt->execute();
+									$stmt->close();
+
+									// Hapus data dari tbl_alternatif
+									$stmt = $connection->prepare("DELETE FROM tbl_alternatif WHERE id_alternatif = ?");
+									$stmt->bind_param('i', $id_alternatif);
+									$stmt->execute();
+									$stmt->close();
+
+									// Commit transaksi
+									$connection->commit();
 				?>
 						<script type="text/javascript">
-							location.href = 'alternatif.php'
+							alert('Data berhasil dihapus.');
+							location.href = 'alternatif.php';
 						</script>
 				<?php
+								} catch (Exception $e) {
+									// Rollback jika terjadi kesalahan
+									$connection->rollback();
+									echo "Error: " . $e->getMessage();
+								} finally {
+									// Aktifkan kembali autocommit
+									$connection->autocommit(true);
 								}
 							}
 						} else {
@@ -110,13 +142,13 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 			<div class="table-responsive">
 				<table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
 					<thead>
-						<tr>
-							<th width="50">ID</th>
+						<tr style="text-align:center">
+							<th width="50">No</th>
 							<th>Alternatif</th>
 							<th width="240">Aksi</th>
 						</tr>
 					</thead>
-					<tbody>
+					<tbody style="text-align:center">
 						<?php
 							$stmt = $connection->prepare("SELECT * FROM tbl_alternatif");
 							$stmt->execute();
@@ -128,13 +160,13 @@ $page = isset($_GET['page']) ? $_GET['page'] : "";
 						?>
 								<tr>
 									<td><?php echo $no++; ?></td>
-									<td><?php echo htmlspecialchars($row['nama_alternatif']); ?></td> <!-- Mengamankan output -->
+									<td style="text-align:left"><?php echo htmlspecialchars($row['nama_alternatif']); ?></td> <!-- Mengamankan output -->
 									<td class="align-center">
 										<a href="?page=form&id=<?php echo $row['id_alternatif']; ?>&nama=<?php echo urlencode($row['nama_alternatif']); ?>" class="btn btn-warning">
-											<span class="mif-pencil icon"></span> Edit
+											<span></span> Ubah
 										</a>
 										<a href="?page=hapus&id=<?php echo $row['id_alternatif']; ?>" class="btn btn-danger">
-											<span class="mif-cancel icon"></span> Hapus
+											<span></span> Hapus
 										</a>
 									</td>
 								</tr>

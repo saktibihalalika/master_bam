@@ -12,10 +12,25 @@
         <div class="d-sm-none d-lg-inline-block">Hi, <?= $_SESSION['login']['username'] ?></div>
       </a>
       <div class="dropdown-menu dropdown-menu-right">
-        <a href="../logout.php" class="dropdown-item has-icon text-danger">
+        <a href="../logout.php"
+          class="dropdown-item has-icon text-danger"
+          onclick="return confirmLogout(event);">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
       </div>
     </li>
   </ul>
 </nav>
+
+<script>
+  function confirmLogout(event) {
+    // Tampilkan kotak konfirmasi
+    const userConfirmed = confirm("Are you sure you want to logout?");
+    if (!userConfirmed) {
+      // Batalkan tindakan default (navigasi ke logout.php) jika pengguna memilih "Cancel"
+      event.preventDefault();
+      return false;
+    }
+    return true; // Lanjutkan ke logout.php jika pengguna memilih "OK"
+  }
+</script>

@@ -1,223 +1,356 @@
 <?php
 require_once '../helper/connection.php';
-session_start();
-if (!isset($_SESSION['username'])) {
-?>
-	<script>
-		window.location.assign("login.php")
-	</script>
-<?php
-}
 ?>
 <!DOCTYPE html>
 <html>
 
 <head>
 	<meta charset="utf-8" />
-	<title>SPK Metode tbl</title>
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">
+	<!-- General CSS Files -->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="stylesheet" href="../assets/modules/datatables/datatables.min.css">
+	<link rel="stylesheet" href="../assets/css/style.css">
+	<title>Cetak Laporan</title>
+	<style>
+		body {
+			background-color: white;
+			color: black;
+			margin: 0;
+			padding: 0;
+		}
+	</style>
 </head>
 
 <body>
 
-	<div class="container">
-		<h2 style="text-align:center;">LAPORAN PERANGKINGAN SISTEM PENDUKUNG KEPUTUSAN METODE tbl</h2>
-		<p><strong>Nilai Dasar</strong></p>
-		<table class="table table-striped table-hover cell-hover border table-bordered">
 
-			<tbody>
-				<?php
-				$stmt = $connection->prepare("select * from tbl_alternatif");
-				$nox = 1;
-				$stmt->execute();
-				while ($row = $stmt->fetch()) {
-				?>
+	<div class="container">
+		<a href="../perangkingan/perangkingan.php" class="btn btn-info">Kembali</a>
+		<a href="generate_pdf.php" class="btn btn-primary">
+			<i></i> Cetak PDF
+		</a>
+		<p><br /></p>
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h2 class="text-center">LAPORAN PERANGKINGAN SISTEM PENDUKUNG KEPUTUSAN METODE SMART</h2>
+		</div>
+
+		<p><br /></p>
+		<h4>Matriks Keputusan (Nilai Awal)</h4>
+		<div class="table-responsive">
+			<table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
+				<thead style="text-align:center">
 					<tr>
-						<td><?php echo $nox++ ?></td>
-						<td><?php echo $row['nama_alternatif'] ?></td>
+						<th>No</th>
+						<th>Alternatif</th>
 						<?php
-						$stmt3 = $connection->prepare("select * from tbl_kriteria");
-						$stmt3->execute();
-						while ($row3 = $stmt3->fetch()) {
+						// Prepare and execute the query to fetch criteria
+						$stmt = $connection->prepare("SELECT nama_kriteria FROM tbl_kriteria");
+						$stmt->execute();
+						// Bind the result variable
+						$stmt->bind_result($nama_kriteria);
+						// Fetch and display the criteria in table headers
+						while ($stmt->fetch()) {
+							echo '<th>' . htmlspecialchars($nama_kriteria, ENT_QUOTES, 'UTF-8') . '</th>';
+						}
+						// Close the statement
+						$stmt->close();
 						?>
-							<td>
-								<?php
-								$stmt4 = $connection->prepare("select * from tbl_alternatif_kriteria where id_kriteria='" . $row3['id_kriteria'] . "' and id_alternatif='" . $row['id_alternatif'] . "'");
-								$stmt4->execute();
-								while ($row4 = $stmt4->fetch()) {
-									echo $row4['nilai_alternatif_kriteria'];
-								?>
-									<!--<a href="?page=form&alt=<?php echo $row['id_alternatif'] ?>&kri=<?php echo $row3['id_kriteria'] ?>&nilai=<?php echo $row4['nilai_alternatif_kriteria'] ?>" style="color:orange"><span class="mif-pencil icon"></span></a>-->
-								<?php
-								}
-								?>
-							</td>
+					</tr>
+				</thead>
+				<tbody style="text-align:center">
+					<?php
+					// Fetch all alternatives
+					$stmtAlternatif = $connection->prepare("SELECT * FROM tbl_alternatif");
+					$stmtAlternatif->execute();
+					$resultAlternatif = $stmtAlternatif->get_result();
+					$alternatifs = $resultAlternatif->fetch_all(MYSQLI_ASSOC);
+
+					// Fetch all criteria
+					$stmtKriteria = $connection->prepare("SELECT * FROM tbl_kriteria");
+					$stmtKriteria->execute();
+					$resultKriteria = $stmtKriteria->get_result();
+					$kriterias = $resultKriteria->fetch_all(MYSQLI_ASSOC);
+
+					// Fetch all evaluations at once
+					$stmtPenilaian = $connection->prepare("SELECT * FROM tbl_penilaian");
+					$stmtPenilaian->execute();
+					$resultPenilaian = $stmtPenilaian->get_result();
+					$penilaians = $resultPenilaian->fetch_all(MYSQLI_ASSOC);
+
+					// Create a mapping of evaluations for easier access
+					$penilaianMap = [];
+					foreach ($penilaians as $penilaian) {
+						$penilaianMap[$penilaian['id_alternatif']][$penilaian['id_kriteria']] = $penilaian['nilai_awal'];
+					}
+
+					$nox = 1;
+					foreach ($alternatifs as $alternatif) {
+					?>
+						<tr>
+							<td><?php echo $nox++; ?></td>
+							<td style="text-align:left"><?php echo htmlspecialchars($alternatif['nama_alternatif']); ?></td>
+							<?php
+							foreach ($kriterias as $kriteria) {
+								$nilaiPenilaian = isset($penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']])
+									? $penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']]
+									: '-'; // Default value if no evaluation exists
+							?>
+								<td>
+									<?php echo htmlspecialchars($nilaiPenilaian); ?>
+									<!--<a href="?page=form&alt=<?php echo $alternatif['id_alternatif']; ?>&kri=<?php echo $kriteria['id_kriteria']; ?>&nilai=<?php echo $nilaiPenilaian; ?>" style="color:orange"><span class="mif-pencil icon"></span></a>-->
+								</td>
+							<?php
+							}
+							?>
+						</tr>
+					<?php
+					}
+					?>
+					<!-- Baris Nilai Terbesar -->
+					<tr>
+						<td colspan="2" style="text-align: center;"><strong>Nilai Terbesar</strong></td>
 						<?php
+						foreach ($kriterias as $kriteria) {
+							$maxValue = null;
+							foreach ($alternatifs as $alternatif) {
+								$nilaiPenilaian = isset($penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']])
+									? $penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']]
+									: null;
+								if ($nilaiPenilaian !== null && ($maxValue === null || $nilaiPenilaian > $maxValue)) {
+									$maxValue = $nilaiPenilaian;
+								}
+							}
+							echo '<td>' . htmlspecialchars($maxValue) . '</td>';
 						}
 						?>
 					</tr>
+					<!-- Baris Nilai Terkecil -->
+					<tr>
+						<td colspan="2" style="text-align: center;"><strong>Nilai Terkecil</strong></td>
+						<?php
+						foreach ($kriterias as $kriteria) {
+							$minValue = null;
+							foreach ($alternatifs as $alternatif) {
+								$nilaiPenilaian = isset($penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']])
+									? $penilaianMap[$alternatif['id_alternatif']][$kriteria['id_kriteria']]
+									: null;
+								if ($nilaiPenilaian !== null && ($minValue === null || $nilaiPenilaian < $minValue)) {
+									$minValue = $nilaiPenilaian;
+								}
+							}
+							echo '<td>' . htmlspecialchars($minValue) . '</td>';
+						}
+						?>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<p><br /></p>
+		<h4>Bobot Kriteria</h4>
+		<table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
+			<thead style="text-align:center">
+				<tr>
+					<th>-</th>
+					<?php
+					// Ambil nama-nama kriteria untuk ditampilkan sebagai header tabel
+					$stmtKriteria = $connection->prepare("SELECT * FROM tbl_kriteria");
+					$stmtKriteria->execute();
+					$kriterias = [];
+					$resultKriteria = $stmtKriteria->get_result();
+					while ($row = $resultKriteria->fetch_assoc()) {
+						$kriterias[] = $row;
+						echo "<th>{$row['nama_kriteria']}</th>";
+					}
+					?>
+				</tr>
+			</thead>
+			<tbody style="text-align:center">
+				<tr>
+					<td><strong>Bobot</strong></td>
+					<?php
+					// Menampilkan bobot dari masing-masing kriteria
+					foreach ($kriterias as $kriteria) {
+						echo "<td>{$kriteria['bobot_kriteria']}</td>";
+					}
+					?>
+				</tr>
+				<tr>
+					<td style="text-align: center;"><strong>Benefit / Cost</strong></td>
+					<?php
+					// Menampilkan bobot dari masing-masing kriteria
+					foreach ($kriterias as $kriteria) {
+						echo "<td>{$kriteria['tipe_kriteria']}</td>";
+					}
+					?>
+				</tr>
+			</tbody>
+		</table>
+
+		<p><br /></p>
+		<h4>Nilai Utility</h4>
+		<table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
+			<thead style="text-align:center">
+				<tr>
+					<th>No</th>
+					<th>Alternatif</th>
+					<?php
+					// Ambil nama-nama kriteria untuk ditampilkan sebagai header tabel
+					$stmtKriteria = $connection->prepare("SELECT * FROM tbl_kriteria");
+					$stmtKriteria->execute();
+					$kriterias = [];
+					$resultKriteria = $stmtKriteria->get_result();
+					while ($row = $resultKriteria->fetch_assoc()) {
+						$kriterias[] = $row;
+						echo "<th>{$row['nama_kriteria']}</th>";
+					}
+					?>
+				</tr>
+			</thead>
+			<tbody style="text-align:center">
 				<?php
+				// Ambil semua data alternatif
+				$stmtAlternatif = $connection->prepare("SELECT * FROM tbl_alternatif");
+				$stmtAlternatif->execute();
+				$resultAlternatif = $stmtAlternatif->get_result();
+				$nox = 1;
+
+				// Hitung skor total setiap alternatif dan simpan dalam array
+				while ($alternatif = $resultAlternatif->fetch_assoc()) {
+					$totalScore = 0;
+					$altId = $alternatif['id_alternatif'];
+
+					echo "<tr><td>{$nox}</td><td style='text-align:left;'>{$alternatif['nama_alternatif']}</td>";
+					$nox++;
+
+					foreach ($kriterias as $kriteria) {
+						// Ambil nilai min, max, dan tipe kriteria
+						$stmtMinMax = $connection->prepare("SELECT MIN(nilai_awal) AS min_val, MAX(nilai_awal) AS max_val FROM tbl_penilaian WHERE id_kriteria = ?");
+						$stmtMinMax->bind_param("i", $kriteria['id_kriteria']);
+						$stmtMinMax->execute();
+						$resultMinMax = $stmtMinMax->get_result();
+						$minMaxRow = $resultMinMax->fetch_assoc();
+						$minValue = $minMaxRow['min_val'];
+						$maxValue = $minMaxRow['max_val'];
+
+						// Ambil nilai awal untuk alternatif dan kriteria tertentu
+						$stmtPenilaian = $connection->prepare("SELECT nilai_awal FROM tbl_penilaian WHERE id_alternatif = ? AND id_kriteria = ?");
+						$stmtPenilaian->bind_param("ii", $altId, $kriteria['id_kriteria']);
+						$stmtPenilaian->execute();
+						$resultPenilaian = $stmtPenilaian->get_result();
+						$nilaiAwalRow = $resultPenilaian->fetch_assoc();
+
+						// Lewati jika nilai_awal tidak ditemukan
+						if (!$nilaiAwalRow) {
+							echo "<td>-</td>"; // Tampilkan tanda kosong atau indikator
+							continue;
+						}
+
+						$nilaiAwal = $nilaiAwalRow['nilai_awal'];
+
+						// Hitung nilai utility berdasarkan tipe kriteria
+						if ($kriteria['tipe_kriteria'] == 'Cost') {
+							$nilaiUtility = ($maxValue - $nilaiAwal) / ($maxValue - $minValue);
+						} else {
+							$nilaiUtility = ($nilaiAwal - $minValue) / ($maxValue - $minValue);
+						}
+
+						// Tampilkan nilai utility
+						echo "<td>{$nilaiUtility}</td>";
+
+						// Update nilai_utility di tabel penilaian
+						$stmtUpdate = $connection->prepare("UPDATE tbl_penilaian SET nilai_utility = ? WHERE id_alternatif = ? AND id_kriteria = ?");
+						$stmtUpdate->bind_param("dii", $nilaiUtility, $altId, $kriteria['id_kriteria']);
+						$stmtUpdate->execute();
+					}
 				}
+
+
 				?>
 			</tbody>
 		</table>
-		<br />
-		<p><strong>Nilai Perangkingan</strong></p>
-		<table class="table table-striped table-hover cell-hover border table-bordered">
-			<thead>
-				<tr>
-					<th width="50">No</th>
-					<th>Alternatif</th>
-					<?php
-					$stmt2x = $connection->prepare("select * from tbl_kriteria");
-					$stmt2x->execute();
-					while ($row2x = $stmt2x->fetch()) {
-					?>
-						<th><?php echo $row2x['nama_kriteria'] ?></th>
-					<?php
-					}
-					?>
-					<th>Hasil</th>
-					<th>Ranking</th>
-					<th>Keterangan</th>
-					<?php /* if(isset($_POST['update'])){
-	$stmt = $connection->prepare("select sum(bobot_kriteria) as bbtk from tbl_kriteria");
-	$stmt->execute();
-	$row = $stmt->fetch();
-	if($_POST['bobot']<=100){
-		$bbt = $_GET['bobot'];
-		$bbt2 = $_POST['bobot']/100;
-		$bbtk = $row['bbtk']-$bbt;
-		$bbtk2 = $bbtk+$bbt2;
-		if($bbtk2<=1){
-			$id = $_POST['id'];
-			$nama = $_POST['nama'];
-			$bobot = $_POST['bobot']/100;
-			$stmt2 = $connection->prepare("update tbl_kriteria set nama_kriteria=?, bobot_kriteria=? where id_kriteria=?");
-			$stmt2->bindParam(1,$nama);
-			$stmt2->bindParam(2,$bobot);
-			$stmt2->bindParam(3,$id);
-			if($stmt2->execute()){
-				?>
-				<script type="text/javascript">location.href='kriteria.php'</script>
-				<?php
-			} else{
-				?>
-				<script type="text/javascript">alert('Gagal mengubah data')</script>
-				<?php
-			}
-		} else{
-			?>
-			<script type="text/javascript">alert('Bobot haruslah 100% jika dijumlahkan semua kriteria')</script>
-			<?php
-		}
-	} else{
-		?>
-			<script type="text/javascript">alert('Maaf nilai bobot maksimal 100')</script>
-		<?php
-	}
-} */ ?>
 
+		<p><br /></p>
+		<h4>Perhitungan Nilai</h4>
+		<table class="table table-striped table-hover cell-hover border table-bordered dataTable" data-role="datatable" data-searching="true">
+			<thead style="text-align:center">
+				<tr>
+					<th>Ranking</th>
+					<th>Alternatif</th>
+					<th>Total Nilai Akhir</th>
+					<th>Keterangan</th>
 				</tr>
 			</thead>
-			<tbody>
-				<tr>
-					<td>-</td>
-					<td>Bobot</td>
-					<?php
-					$stmt2x1 = $connection->prepare("select * from tbl_kriteria");
-					$stmt2x1->execute();
-					while ($row2x1 = $stmt2x1->fetch()) {
-					?>
-						<td><?php echo $row2x1['bobot_kriteria'] ?></td>
-					<?php
+			<tbody style="text-align:center">
+				<?php
+				// Ambil semua data alternatif
+				$stmtAlternatif = $connection->prepare("SELECT * FROM tbl_alternatif");
+				$stmtAlternatif->execute();
+				$resultAlternatif = $stmtAlternatif->get_result();
+				$rankingData = [];
+
+				// Hitung skor total setiap alternatif dan simpan dalam array
+				while ($alternatif = $resultAlternatif->fetch_assoc()) {
+					$totalScore = 0;
+					$altId = $alternatif['id_alternatif'];
+
+					foreach ($kriterias as $kriteria) {
+						// Ambil nilai utility dan kalikan dengan bobot
+						$stmtPenilaian = $connection->prepare("SELECT nilai_utility FROM tbl_penilaian WHERE id_alternatif = ? AND id_kriteria = ?");
+						$stmtPenilaian->bind_param("ii", $altId, $kriteria['id_kriteria']);
+						$stmtPenilaian->execute();
+						$resultPenilaian = $stmtPenilaian->get_result();
+						$nilaiUtilityRow = $resultPenilaian->fetch_assoc();
+						$nilaiUtility = $nilaiUtilityRow ? $nilaiUtilityRow['nilai_utility'] : 0;
+
+						$totalutility = $nilaiUtility * $kriteria['bobot_kriteria'];
+						$totalScore += $totalutility;
 					}
-					?>
-					<td>-</td>
-					<td>-</td>
-					<td>-</td>
-				</tr>
-				<?php
-				$stmtx = $connection->prepare("select * from tbl_alternatif");
-				$noxx = 1;
-				$stmtx->execute();
-				while ($rowx = $stmtx->fetch()) {
-				?>
-					<tr>
-						<td><?php echo $noxx++ ?></td>
-						<td><?php echo $rowx['nama_alternatif'] ?></td>
-						<?php
-						$stmt3x = $connection->prepare("select * from tbl_kriteria");
-						$stmt3x->execute();
-						while ($row3x = $stmt3x->fetch()) {
-						?>
-							<td>
-								<?php
-								$stmt4x = $connection->prepare("select * from tbl_alternatif_kriteria where id_kriteria='" . $row3x['id_kriteria'] . "' and id_alternatif='" . $rowx['id_alternatif'] . "'");
-								$stmt4x->execute();
-								while ($row4x = $stmt4x->fetch()) {
-									$ida = $row4x['id_alternatif'];
-									$idk = $row4x['id_kriteria'];
-									echo $kal = $row4x['nilai_alternatif_kriteria'] * $row3x['bobot_kriteria'];
-									$stmt2x3 = $connection->prepare("update tbl_alternatif_kriteria set bobot_alternatif_kriteria=? where id_alternatif=? and id_kriteria=?");
-									$stmt2x3->bindParam(1, $kal);
-									$stmt2x3->bindParam(2, $ida);
-									$stmt2x3->bindParam(3, $idk);
-									$stmt2x3->execute();
-								}
-								?>
-							</td>
-						<?php
-						}
-						?>
-						<td>
-							<?php
-							$stmt3x2 = $connection->prepare("select sum(bobot_alternatif_kriteria) as bak from tbl_alternatif_kriteria where id_alternatif='" . $rowx['id_alternatif'] . "'");
-							$stmt3x2->execute();
-							$row3x2 = $stmt3x2->fetch();
-							$ideas = $rowx['id_alternatif'];
-							echo $hsl = $row3x2['bak'];
-							if ($hsl >= 80) {
-								$ket = "Sangat Layak";
-							} else if ($hsl >= 60) {
-								$ket = "Layak";
-							} else if ($hsl >= 40) {
-								$ket = "Dipertimbangkan";
-							} else {
-								$ket = "Tidak Layak";
-							}
-							?>
-						</td>
-						<td>
-							<?php
-							// Hitung perangkingan (misalnya, urutan alternatif berdasarkan total bobot)
-							$stmt_rank = $connection->prepare("SELECT id_alternatif FROM tbl_alternatif_kriteria GROUP BY id_alternatif ORDER BY sum(bobot_alternatif_kriteria) DESC");
-							$stmt_rank->execute();
-							$rank = 1;
-							while ($row_rank = $stmt_rank->fetch()) {
-								if ($rowx['id_alternatif'] == $row_rank['id_alternatif']) {
-									echo $rank; // Output peringkat
-									break;
-								}
-								$rank++;
-							}
-							?>
-						</td>
-						<td>
-							<?php
-							if ($hsl >= 80) {
-								$ket2 = "Sangat Layak";
-							} else if ($hsl >= 55) {
-								$ket2 = "Layak";
-							} else if ($hsl >= 35) {
-								$ket2 = "Dipertimbangkan";
-							} else {
-								$ket2 = "Tidak Layak";
-							}
-							echo $ket2;
-							?>
-						</td>
-					</tr>
-				<?php
+
+					// Tentukan status berdasarkan skor total
+					$status = '';
+					if ($totalScore >= 0.80) {
+						$status = "Sangat Layak";
+					} elseif ($totalScore >= 0.55) {
+						$status = "Layak";
+					} elseif ($totalScore >= 0.35) {
+						$status = "Dipertimbangkan";
+					} elseif ($totalScore <= 0.35) {
+						$status = "Tidak Layak";
+					} else {
+						$status = "Salah Perhitungan";
+					}
+
+					// Update hasil dan keterangan dalam tabel alternatif
+					$stmtUpdateAlternatif = $connection->prepare("UPDATE tbl_perangkingan SET total_perhitungan = ?, keterangan = ? WHERE id_alternatif = ?");
+					$stmtUpdateAlternatif->bind_param("dsi", $totalScore, $status, $altId);
+					$stmtUpdateAlternatif->execute();
+
+					// Simpan ke rankingData untuk urutan peringkat
+					$rankingData[] = [
+						'id_alternatif' => $altId,
+						'nama_alternatif' => $alternatif['nama_alternatif'],
+						'total_score' => $totalScore,
+						'status' => $status,
+					];
+				}
+
+				// Urutkan berdasarkan skor tertinggi
+				usort($rankingData, function ($a, $b) {
+					return $b['total_score'] <=> $a['total_score'];
+				});
+
+				// Tampilkan ranking berdasarkan skor
+				$rank = 1;
+				foreach ($rankingData as $data) {
+					echo "<tr>";
+					echo "<td>{$rank}</td>";
+					echo "<td style='text-align:center;''>{$data['nama_alternatif']}</td>";
+					echo "<td>{$data['total_score']}</td>";
+					echo "<td>{$data['status']}</td>";
+					echo "</tr>";
+					$rank++;
 				}
 				?>
 			</tbody>

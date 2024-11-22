@@ -2521,8 +2521,28 @@ body.sidebar-mini .main-sidebar {
     opacity: 1; } }
   body.sidebar-mini .main-sidebar .sidebar-brand {
     display: none; }
-  body.sidebar-mini .main-sidebar .sidebar-brand-sm {
-    display: block; }
+    .main-sidebar .sidebar-brand {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      height: 60px;
+      line-height: 60px;
+    }
+    
+    .main-sidebar .sidebar-brand.sidebar-brand-sm {
+      display: inline-block;
+      height: 60px; /* Sesuaikan dengan ukuran logo */
+      width: auto; /* Hanya menyesuaikan ukuran konten */
+      text-align: center;
+    }
+    
+    .main-sidebar .sidebar-brand.sidebar-brand-sm a {
+      display: none; /* Hilangkan teks */
+    }
+    
+    .main-sidebar .sidebar-brand.sidebar-brand-sm img {
+      display: inline-block; /* Pastikan logo tetap terlihat */
+    }
   body.sidebar-mini .main-sidebar .sidebar-menu > li {
     padding: 10px; }
     body.sidebar-mini .main-sidebar .sidebar-menu > li.menu-header {
@@ -2620,6 +2640,7 @@ body.layout-2 .main-sidebar {
   body.layout-2 .main-sidebar .sidebar-menu li.menu-header {
     padding: 0; }
   body.layout-2 .main-sidebar .sidebar-menu li a {
+    display: inline-block;
     padding: 0; }
     body.layout-2 .main-sidebar .sidebar-menu li a i {
       width: 10px; }
